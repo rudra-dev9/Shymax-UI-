@@ -1,0 +1,212 @@
+local ShymaxUI = {}
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+
+local ParentGui = CoreGui
+
+function ShymaxUI:CreateWindow(Options)
+    local WindowOptions = {
+        Name = Options.Name or "Shymax UI",
+        ThemeColor = Options.ThemeColor or Color3.fromRGB(85, 170, 255)
+    }
+
+    local ShymaxGui = Instance.new("ScreenGui")
+    ShymaxGui.Name = "ShymaxGui"
+    ShymaxGui.Parent = ParentGui
+    ShymaxGui.ResetOnSpawn = false
+
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Name = "MainFrame"
+    MainFrame.Size = UDim2.new(0, 500, 0, 350)
+    MainFrame.Position = UDim2.new(0.5, -250, 0.5, -175)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    MainFrame.BorderSizePixel = 0
+    MainFrame.ClipsDescendants = true
+    MainFrame.Parent = ShymaxGui
+
+    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
+
+    -- Draggable Logic
+    local dragging, dragInput, dragStart, startPos
+    MainFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    MainFrame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    -- Sidebar & Container setup
+    local Sidebar = Instance.new("ScrollingFrame")
+    Sidebar.Size = UDim2.new(0, 140, 1, -40)
+    Sidebar.Position = UDim2.new(0, 0, 0, 40)
+    Sidebar.BackgroundTransparency = 1
+    Sidebar.ScrollBarThickness = 0
+    Sidebar.Parent = MainFrame
+    Instance.new("UIListLayout", Sidebar).Padding = UDim.new(0, 5)
+    Instance.new("UIPadding", Sidebar).PaddingLeft = UDim.new(0, 10)
+
+    local Container = Instance.new("Frame")
+    Container.Size = UDim2.new(1, -150, 1, -50)
+    Container.Position = UDim2.new(0, 150, 0, 50)
+    Container.BackgroundTransparency = 1
+    Container.Parent = MainFrame
+
+    local Window = {}
+    local FirstTab = true
+
+    function Window:CreateTab(Options)
+        local TabBtn = Instance.new("TextButton")
+        TabBtn.Size = UDim2.new(1, -10, 0, 32)
+        TabBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+        TabBtn.Text = Options.Name
+        TabBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+        TabBtn.Font = Enum.Font.GothamMedium
+        TabBtn.TextSize = 13
+        TabBtn.Parent = Sidebar
+        Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
+
+        local TabContent = Instance.new("ScrollingFrame")
+        TabContent.Size = UDim2.new(1, 0, 1, 0)
+        TabContent.BackgroundTransparency = 1
+        TabContent.ScrollBarThickness = 2
+        TabContent.Visible = FirstTab
+        TabContent.Parent = Container
+        Instance.new("UIListLayout", TabContent).Padding = UDim.new(0, 8)
+
+        if FirstTab then
+            TabBtn.BackgroundColor3 = WindowOptions.ThemeColor
+            TabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            FirstTab = false
+        end
+
+        TabBtn.MouseButton1Click:Connect(function()
+            for _, v in pairs(Container:GetChildren()) do v.Visible = false end
+            for _, v in pairs(Sidebar:GetChildren()) do 
+                if v:IsA("TextButton") then
+                    TweenService:Create(v, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(35, 35, 35), TextColor3 = Color3.fromRGB(180, 180, 180)}):Play()
+                end
+            end
+            TabContent.Visible = true
+            TweenService:Create(TabBtn, TweenInfo.new(0.3), {BackgroundColor3 = WindowOptions.ThemeColor, TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+        end)
+
+        local Elements = {}
+
+        -- BUTTON
+        function Elements:CreateButton(Options)
+            local Btn = Instance.new("TextButton")
+            Btn.Size = UDim2.new(1, -10, 0, 35)
+            Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            Btn.Text = Options.Name
+            Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Btn.Font = Enum.Font.Gotham
+            Btn.TextSize = 14
+            Btn.Parent = TabContent
+            Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
+            Btn.MouseButton1Click:Connect(Options.Callback)
+        end
+
+        -- TOGGLE
+        function Elements:CreateToggle(Options)
+            local Toggled = Options.CurrentValue or false
+            local TglFrame = Instance.new("TextButton")
+            TglFrame.Size = UDim2.new(1, -10, 0, 35)
+            TglFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            TglFrame.Text = "  " .. Options.Name
+            TglFrame.TextColor3 = Color3.fromRGB(255, 255, 255)
+            TglFrame.Font = Enum.Font.Gotham
+            TglFrame.TextSize = 14
+            TglFrame.TextXAlignment = Enum.TextXAlignment.Left
+            TglFrame.Parent = TabContent
+            Instance.new("UICorner", TglFrame).CornerRadius = UDim.new(0, 6)
+
+            local Box = Instance.new("Frame")
+            Box.Size = UDim2.new(0, 20, 0, 20)
+            Box.Position = UDim2.new(1, -30, 0.5, -10)
+            Box.BackgroundColor3 = Toggled and WindowOptions.ThemeColor or Color3.fromRGB(50, 50, 50)
+            Box.Parent = TglFrame
+            Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
+
+            TglFrame.MouseButton1Click:Connect(function()
+                Toggled = not Toggled
+                TweenService:Create(Box, TweenInfo.new(0.2), {BackgroundColor3 = Toggled and WindowOptions.ThemeColor or Color3.fromRGB(50, 50, 50)}):Play()
+                Options.Callback(Toggled)
+            end)
+        end
+
+        -- SLIDER
+        function Elements:CreateSlider(Options)
+            local SliderFrame = Instance.new("Frame")
+            SliderFrame.Size = UDim2.new(1, -10, 0, 45)
+            SliderFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            SliderFrame.Parent = TabContent
+            Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 6)
+
+            local Label = Instance.new("TextLabel")
+            Label.Text = "  " .. Options.Name
+            Label.Size = UDim2.new(1, 0, 0, 20)
+            Label.BackgroundTransparency = 1
+            Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Label.Font = Enum.Font.Gotham
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+            Label.Parent = SliderFrame
+
+            local Bar = Instance.new("Frame")
+            Bar.Size = UDim2.new(0.9, 0, 0, 4)
+            Bar.Position = UDim2.new(0.05, 0, 0.75, 0)
+            Bar.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            Bar.Parent = SliderFrame
+
+            local Fill = Instance.new("Frame")
+            Fill.Size = UDim2.new((Options.CurrentValue - Options.Min) / (Options.Max - Options.Min), 0, 1, 0)
+            Fill.BackgroundColor3 = WindowOptions.ThemeColor
+            Fill.BorderSizePixel = 0
+            Fill.Parent = Bar
+
+            local function UpdateSlider()
+                local MousePos = UserInputService:GetMouseLocation().X
+                local BarPos = Bar.AbsolutePosition.X
+                local BarWidth = Bar.AbsoluteSize.X
+                local Percent = math.clamp((MousePos - BarPos) / BarWidth, 0, 1)
+                local Value = math.floor(Options.Min + (Options.Max - Options.Min) * Percent)
+                
+                Fill.Size = UDim2.new(Percent, 0, 1, 0)
+                Options.Callback(Value)
+            end
+
+            Bar.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    local moveConn
+                    moveConn = UserInputService.InputChanged:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseMovement then UpdateSlider() end
+                    end)
+                    UserInputService.InputEnded:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then moveConn:Disconnect() end
+                    end)
+                    UpdateSlider()
+                end
+            end)
+        end
+
+        return Elements
+    end
+
+    return Window
+end
+
+return ShymaxUI
+
