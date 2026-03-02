@@ -14,7 +14,7 @@ A modern Roblox UI library inspired by WindUI, full of smooth animations and ele
 - Free to use
 - Access to code for UI Makers
   
-# RELEASING EARLY 2026
+# RELEASING MARCH 21 2026 BE HYPED! 🔥🔥
 
 ## Usage
 ```lua
